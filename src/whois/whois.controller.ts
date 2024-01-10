@@ -19,4 +19,21 @@ export class WhoisController {
       return response.status(500).json({ result: e.message, code: 500 });
     }
   }
+
+  @Post('whois/batch')
+  async whoisBatch(
+    @Body('domains') domains: string[],
+    @Res() response: Response,
+  ) {
+    if (!domains) {
+      return response.status(400).json({ result: '输入值不正确' });
+    }
+
+    try {
+      const result = await this.whoisService.batchQuery(domains);
+      return response.json({ result: result, success: true, code: 200 });
+    } catch (e) {
+      return response.status(500).json({ result: e.message, code: 500 });
+    }
+  }
 }

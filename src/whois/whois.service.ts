@@ -94,4 +94,54 @@ export class WhoisService {
     const result = this.formatWhois(whoisInformation);
     return result;
   }
+
+  async batchQuery(domains: string[]): Promise<any[]> {
+    const results = [];
+    const whoisServerAddressesCache = new Map<string, string>();
+    for (const domain of domains) {
+      if (!domain) {
+        results.push({ main: {}, error: '域名输入错误' });
+        continue;
+      }
+
+      const suffix = domain.split('.').pop();
+      if (!suffix) {
+        results.push({ main: {}, error: '无法解析域名后缀' });
+        continue;
+      }
+
+      try {
+        let whoisServiceAddressSuffix = '';
+        if (whoisServerAddressesCache.has(suffix)) {
+          whoisServiceAddressSuffix = whoisServerAddressesCache.get(suffix);
+        } else {
+          console.log('suffix', suffix);
+          whoisServiceAddressSuffix = await this.getWhoisAddress(suffix);
+          if (!whoisServiceAddressSuffix) {
+            results.push({
+              main: {},
+              result: '无法获取 WHOIS 服务器地址',
+              whois: '',
+            });
+            continue;
+          }
+          whoisServerAddressesCache.set(suffix, whoisServiceAddressSuffix);
+        }
+
+        const whoisServiceAddress = this.intercept(whoisServiceAddressSuffix);
+
+        const whoisInformation = await this.getDomainWhois(
+          whoisServiceAddress,
+          domain,
+        );
+
+        const formattedData = this.formatWhois(whoisInformation); // 使用一个方法来格式化 WHOIS 数据
+        results.push(formattedData);
+      } catch (error) {
+        results.push({ main: {}, error });
+      }
+    }
+
+    return results;
+  }
 }
