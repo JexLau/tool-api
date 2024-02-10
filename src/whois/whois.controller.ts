@@ -1,39 +1,41 @@
-import { Controller, Post, Body, Res } from '@nestjs/common';
-import { Response } from 'express';
+import {
+  Controller,
+  Post,
+  Body,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { WhoisService } from './whois.service';
 
-@Controller()
+@Controller('whois')
 export class WhoisController {
   constructor(private readonly whoisService: WhoisService) {}
 
-  @Post('whois')
-  async whoisQuery(@Body('domain') domain: string, @Res() response: Response) {
+  @Post()
+  async whoisQuery(@Body('domain') domain: string) {
     if (!domain) {
-      return response.status(400).json({ result: '输入值不正确' });
+      throw new BadRequestException({ result: '输入值不正确' });
     }
 
     try {
       const result = await this.whoisService.query(domain);
-      return response.json({ result: result, success: true, code: 200 });
+      return { result: result, success: true, code: 200 };
     } catch (e) {
-      return response.status(500).json({ result: e.message, code: 500 });
+      throw new InternalServerErrorException({ result: e.message });
     }
   }
 
-  @Post('whois/batch')
-  async whoisBatch(
-    @Body('domains') domains: string[],
-    @Res() response: Response,
-  ) {
+  @Post('/batch')
+  async whoisBatch(@Body('domains') domains: string[]) {
     if (!domains) {
-      return response.status(400).json({ result: '输入值不正确' });
+      throw new BadRequestException({ result: '输入值不正确' });
     }
 
     try {
       const result = await this.whoisService.batchQuery(domains);
-      return response.json({ result: result, success: true, code: 200 });
+      return { result: result, success: true, code: 200 };
     } catch (e) {
-      return response.status(500).json({ result: e.message, code: 500 });
+      throw new InternalServerErrorException({ result: e.message });
     }
   }
 }
